@@ -1,3 +1,7 @@
+//! Challenge 1 of VerifyThis 2025
+//!
+//! https://verifythis.github.io/onsite/archive/2025/
+
 use creusot_std::logic::Mapping;
 use creusot_std::prelude::{vec, *};
 
