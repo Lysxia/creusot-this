@@ -8,9 +8,7 @@ use creusot_std::logic::Mapping;
 #[ensures(true)]
 pub fn mex0_safety(a: &[usize]) -> usize {
     let n = a.len();
-    #[variant(n@ - produced.len())]
     'outer: for v in 0..n {
-        #[variant(n@ - produced.len())]
         #[invariant(true)]
         for i in 0..n {
             if a[i] == v {
