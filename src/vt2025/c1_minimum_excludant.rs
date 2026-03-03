@@ -150,3 +150,34 @@ pub fn mex2_safety(a: &mut [usize]) -> usize {
     }
     return n
 }
+
+#[ensures((^a)@.permutation_of((*a)@))]
+#[ensures(!a@.contains(result))]
+#[ensures(forall<x> x < result ==> a@.contains(x))]
+pub fn mex2(a: &mut [usize]) -> usize {
+    let _a = snapshot! { a@ };
+    let n = a.len();
+    let mut i = 0;
+    #[invariant(a@.permutation_of(*_a))]
+    #[invariant(forall<j> 0 <= j && j < i@ && a@[j]@ < n@ ==> a@[a@[j]@] == a@[j])]
+    while i < n {
+        let x = a[i];
+        if x >= n || a[x] == x {
+            i += 1;
+        } else {
+            a.swap(i, x);
+            if x < i {
+                i += 1;
+            }
+        }
+    }
+    #[invariant(forall<j> 0 <= j && j < produced.len() ==> a@[j]@ == j)]
+    for i in 0..n {
+        if i != a[i] {
+            proof_assert! { forall<j: usize> j < i ==> a@[j@] == j };
+            return i;
+        }
+    }
+    proof_assert! { forall<j: usize> j < n ==> a@[j@] == j };
+    return n
+}
