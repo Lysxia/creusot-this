@@ -148,7 +148,7 @@ pub fn mex2_safety(a: &mut [usize]) -> usize {
             return i;
         }
     }
-    return n
+    n
 }
 
 #[ensures((^a)@.permutation_of((*a)@))]
@@ -179,5 +179,5 @@ pub fn mex2(a: &mut [usize]) -> usize {
         }
     }
     proof_assert! { forall<j: usize> j < n ==> a@[j@] == j };
-    return n
+    n
 }
