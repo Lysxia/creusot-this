@@ -1,4 +1,3 @@
-#[cfg(creusot)]
 use creusot_std::logic::Mapping;
 use creusot_std::prelude::{vec, *};
 
@@ -25,7 +24,7 @@ pub fn mex0_safety(a: &[usize]) -> usize {
 }
 
 #[ensures(!a@.contains(result))]
-#[ensures(forall<x> 0usize <= x && x < result ==> a@.contains(x))]
+#[ensures(forall<x> x < result ==> a@.contains(x))]
 pub fn mex0(a: &[usize]) -> usize {
     let n = a.len();
     let mut _idx = snapshot! { |i: Int| i };
@@ -39,18 +38,26 @@ pub fn mex0(a: &[usize]) -> usize {
             }
         }
         proof_assert! { a@ == a@[..n@] };
-        proof_assert! { forall<x> 0usize <= x && x < v ==> a@[_idx[x@]] == x };
+        proof_assert! { forall<x> x < v ==> a@[_idx[x@]] == x };
         return v;
     }
-    let _ = snapshot! { mex0_lemma };
+    ghost! { apply_mex_lemma(_idx, a) };
     n
+}
+
+#[check(ghost)]
+#[requires(forall<x> 0 <= x && x < a@.len() ==> 0 <= idx[x] && idx[x] < a@.len() && a@[idx[x]]@ == x)]
+#[ensures(forall<n: usize> n@ == a@.len() ==> !a@.contains(n))]
+fn apply_mex_lemma(idx: Snapshot<Mapping<Int, Int>>, a: &[usize]) {
+    let _ = (idx, a);
+    let _ = snapshot! { mex_lemma };
 }
 
 #[logic]
 #[requires(forall<x> 0 <= x && x < a.len() ==> 0 <= idx[x] && idx[x] < a.len() && a[idx[x]]@ == x)]
 #[requires(0 <= i && i < a.len() && a[i]@ == a.len())]
 #[ensures(false)]
-fn mex0_lemma(idx: Mapping<Int, Int>, a: Seq<usize>, i: Int) {
+fn mex_lemma(idx: Mapping<Int, Int>, a: Seq<usize>, i: Int) {
     pigeonhole(a.len() + 1, a.len(), idx.set(a.len(), i))
 }
 
@@ -68,3 +75,54 @@ fn pigeonhole(n: Int, m: Int, f: Mapping<Int, Int>) {
 #[logic]
 #[builtin("pigeon.Pigeonhole.pigeonhole")]
 fn use_pigeonhole_builtin() {}
+
+// Version 1: Boolean marks
+
+// Prove only safety
+// There is a possible overflow if the length is usize::MAX
+// In practice, `vec!` is going to panic if the length is greater than `isize::MAX` anyway.
+#[requires(a@.len() < usize::MAX@)]
+#[ensures(true)]
+pub fn mex1_safety(a: &[usize]) -> usize {
+    let n = a.len();
+    let mut seen = vec![false; n];
+    #[invariant(seen@.len() == n@)]
+    for &x in a {
+        if x < n {
+            seen[x] = true;
+        }
+    }
+    for (i, seen) in seen.into_iter().enumerate() {
+        if !seen {
+            return i;
+        }
+    }
+    return n;
+}
+
+#[requires(a@.len() < usize::MAX@)]
+#[ensures(!a@.contains(result))]
+#[ensures(forall<x> x < result ==> a@.contains(x))]
+pub fn mex1(a: &[usize]) -> usize {
+    let n = a.len();
+    let mut seen = vec![false; n];
+    let mut _idx = snapshot! { |i: Int| i };
+    #[invariant(seen@.len() == n@)]
+    #[invariant(forall<x> 0 <= x && x < n@ && seen@[x] ==> 0 <= _idx[x] && _idx[x] < n@ && a@[_idx[x]]@ == x)]
+    #[invariant(forall<j> 0 <= j && j < produced.len() && a@[j] < n ==> seen@[a@[j]@] && 0 <= _idx[a@[j]@] && _idx[a@[j]@] < n@ && a@[_idx[a@[j]@]] == a@[j])]
+    for &x in a {
+        if x < n {
+            seen[x] = true;
+        }
+        _idx = snapshot! { _idx.set(x@, produced.len() - 1) };
+    }
+    #[invariant(forall<x> 0 <= x && x < produced.len() ==> 0 <= _idx[x] && _idx[x] < n@ && a@[_idx[x]]@ == x)]
+    for (i, seen) in seen.into_iter().enumerate() {
+        if !seen {
+            proof_assert! { forall<x> x < i ==> a@[_idx[x@]] == x };
+            return i;
+        }
+    }
+    ghost! { apply_mex_lemma(_idx, a) };
+    return n;
+}
