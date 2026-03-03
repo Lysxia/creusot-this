@@ -126,31 +126,6 @@ pub fn mex1(a: &[usize]) -> usize {
 
 // Version 2: Mutated array
 
-#[ensures(true)]
-pub fn mex2_safety(a: &mut [usize]) -> usize {
-    let n = a.len();
-    let mut i = 0;
-    #[invariant(a@.len() == n@)]
-    while i < n {
-        let x = a[i];
-        if x >= n || a[x] == x {
-            i += 1;
-        } else {
-            a.swap(i, x);
-            if x < i {
-                i += 1;
-            }
-        }
-    }
-    #[invariant(true)]
-    for i in 0..n {
-        if i == a[i] {
-            return i;
-        }
-    }
-    n
-}
-
 #[ensures((^a)@.permutation_of((*a)@))]
 #[ensures(!a@.contains(result))]
 #[ensures(forall<x> x < result ==> a@.contains(x))]
