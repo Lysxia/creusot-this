@@ -5,6 +5,8 @@ use creusot_std::logic::Mapping;
 // Minimal version of `mex0` for which we can prove safety (here: no out of bounds accesses).
 // The trivial `invariant(true)` enables a Creusot-specific desugaring of the for loop
 // which is sufficient to expose the fact that `i` is in the range `0..n`.
+// The trivial `ensures(true)` is to enable compiling with rustc (attributes on expressions
+// like `invariant(true)` are unstable, so `ensures` removes them in normal compilation.)
 #[ensures(true)]
 pub fn mex0_safety(a: &[usize]) -> usize {
     let n = a.len();
