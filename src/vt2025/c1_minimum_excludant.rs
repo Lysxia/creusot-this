@@ -33,7 +33,7 @@ pub fn mex0(a: &[usize]) -> usize {
         #[invariant(!a@[..produced.len()].contains(v))]
         for i in 0..n {
             if a[i] == v {
-                _idx = snapshot! { _idx.set(v@, i@) };
+                ghost! { _idx = snapshot! { _idx.set(v@, i@) } };
                 continue 'outer;
             }
         }
@@ -114,7 +114,7 @@ pub fn mex1(a: &[usize]) -> usize {
         if x < n {
             seen[x] = true;
         }
-        _idx = snapshot! { _idx.set(x@, produced.len() - 1) };
+        ghost! { _idx = snapshot! { _idx.set(x@, produced.len() - 1) } };
     }
     #[invariant(forall<x> 0 <= x && x < produced.len() ==> 0 <= _idx[x] && _idx[x] < n@ && a@[_idx[x]]@ == x)]
     for (i, seen) in seen.into_iter().enumerate() {
