@@ -47,17 +47,17 @@ pub fn mex0(a: &[usize]) -> usize {
 
 #[check(ghost)]
 #[requires(forall<x> 0 <= x && x < a@.len() ==> 0 <= idx[x] && idx[x] < a@.len() && a@[idx[x]]@ == x)]
-#[ensures(forall<n: usize> n@ == a@.len() ==> !a@.contains(n))]
-fn apply_mex_lemma(idx: Snapshot<Mapping<Int, Int>>, a: &[usize]) {
+#[ensures(forall<n: T> n@ == a@.len() ==> !a@.contains(n))]
+fn apply_mex_lemma<T: View<ViewTy = Int>>(idx: Snapshot<Mapping<Int, Int>>, a: &[T]) {
     let _ = (idx, a);
-    let _ = snapshot! { mex_lemma };
+    let _ = snapshot! { mex_lemma::<T> };
 }
 
 #[logic]
 #[requires(forall<x> 0 <= x && x < a.len() ==> 0 <= idx[x] && idx[x] < a.len() && a[idx[x]]@ == x)]
 #[requires(0 <= i && i < a.len() && a[i]@ == a.len())]
 #[ensures(false)]
-fn mex_lemma(idx: Mapping<Int, Int>, a: Seq<usize>, i: Int) {
+fn mex_lemma<T: View<ViewTy = Int>>(idx: Mapping<Int, Int>, a: Seq<T>, i: Int) {
     pigeonhole(a.len() + 1, a.len(), idx.set(a.len(), i))
 }
 
@@ -180,4 +180,41 @@ pub fn mex2(a: &mut [usize]) -> usize {
     }
     proof_assert! { forall<j: usize> j < n ==> a@[j@] == j };
     n
+}
+
+// Version 3: Sorted array
+
+#[logic(open)]
+pub fn sorted<T: DeepModel>(a: Seq<T>) -> bool
+where
+    T::DeepModelTy: OrdLogic,
+{
+    pearlite! { forall<i, j> 0 <= i && i < j && j < a.len() ==> a[i].deep_model() <= a[j].deep_model() }
+}
+
+#[requires(a@.len() < isize::MAX@)]
+#[requires(sorted(a@))]
+#[ensures(!a@.contains(result))]
+#[ensures(forall<x> 0isize <= x && x < result ==> a@.contains(x))]
+pub fn mex3(a: &[isize]) -> isize {
+    let n = a.len();
+    let mut last = -1;
+    let mut _idx = snapshot! { |i: Int| i };
+    #[invariant(-1 <= last@ && last@ < n@)]
+    #[invariant(forall<x> 0 <= x && x <= last@ ==> 0 <= _idx[x] && _idx[x] < n@ && a@[_idx[x]]@ == x)]
+    #[invariant(forall<j> 0 <= j && j < produced.len() && 0 <= a@[j]@ ==> a@[j] <= last)]
+    for i in 0..n {
+        if a[i] >= last + 2 {
+            proof_assert! { forall<x: isize> 0 <= x@ && x <= last ==> a@[_idx[x@]] == x };
+            return last + 1;
+        } else if a[i] >= 0 {
+            last = a[i];
+            ghost! { _idx = snapshot! { _idx.set(a@[i@]@, i@) } };
+        }
+        ghost! {
+            if last >= 0 && last as usize >= n { apply_mex_lemma(_idx, a) }
+        };
+    }
+    proof_assert! { forall<x: isize> 0 <= x@ && x <= last ==> a@[_idx[x@]] == x };
+    last + 1
 }
