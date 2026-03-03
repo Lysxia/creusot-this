@@ -1,6 +1,8 @@
-use creusot_std::prelude::*;
 #[cfg(creusot)]
 use creusot_std::logic::Mapping;
+use creusot_std::prelude::{vec, *};
+
+// Version 0: Naive implementation
 
 // Minimal version of `mex0` for which we can prove safety (here: no out of bounds accesses).
 // The trivial `invariant(true)` enables a Creusot-specific desugaring of the for loop
@@ -14,10 +16,10 @@ pub fn mex0_safety(a: &[usize]) -> usize {
         #[invariant(true)]
         for i in 0..n {
             if a[i] == v {
-                continue 'outer
+                continue 'outer;
             }
         }
-        return v
+        return v;
     }
     n
 }
@@ -33,12 +35,12 @@ pub fn mex0(a: &[usize]) -> usize {
         for i in 0..n {
             if a[i] == v {
                 _idx = snapshot! { _idx.set(v@, i@) };
-                continue 'outer
+                continue 'outer;
             }
         }
         proof_assert! { a@ == a@[..n@] };
         proof_assert! { forall<x> 0usize <= x && x < v ==> a@[_idx[x@]] == x };
-        return v
+        return v;
     }
     let _ = snapshot! { mex0_lemma };
     n
@@ -65,5 +67,4 @@ fn pigeonhole(n: Int, m: Int, f: Mapping<Int, Int>) {
 // Not actually callable!
 #[logic]
 #[builtin("pigeon.Pigeonhole.pigeonhole")]
-fn use_pigeonhole_builtin() {
-}
+fn use_pigeonhole_builtin() {}
