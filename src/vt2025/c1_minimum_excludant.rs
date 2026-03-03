@@ -79,9 +79,6 @@ fn use_pigeonhole_builtin() {}
 // Version 1: Boolean marks
 
 // Prove only safety
-// There is a possible overflow if the length is usize::MAX
-// In practice, `vec!` is going to panic if the length is greater than `isize::MAX` anyway.
-#[requires(a@.len() < usize::MAX@)]
 #[ensures(true)]
 pub fn mex1_safety(a: &[usize]) -> usize {
     let n = a.len();
@@ -92,15 +89,15 @@ pub fn mex1_safety(a: &[usize]) -> usize {
             seen[x] = true;
         }
     }
-    for (i, seen) in seen.into_iter().enumerate() {
-        if !seen {
+    #[invariant(true)]
+    for i in 0..n {
+        if !seen[i] {
             return i;
         }
     }
     return n;
 }
 
-#[requires(a@.len() < usize::MAX@)]
 #[ensures(!a@.contains(result))]
 #[ensures(forall<x> x < result ==> a@.contains(x))]
 pub fn mex1(a: &[usize]) -> usize {
@@ -117,8 +114,8 @@ pub fn mex1(a: &[usize]) -> usize {
         ghost! { _idx = snapshot! { _idx.set(x@, produced.len() - 1) } };
     }
     #[invariant(forall<x> 0 <= x && x < produced.len() ==> 0 <= _idx[x] && _idx[x] < n@ && a@[_idx[x]]@ == x)]
-    for (i, seen) in seen.into_iter().enumerate() {
-        if !seen {
+    for i in 0..n {
+        if !seen[i] {
             proof_assert! { forall<x> x < i ==> a@[_idx[x@]] == x };
             return i;
         }
