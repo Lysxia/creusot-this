@@ -1,3 +1,7 @@
+//! Challenge 2 of VerifyThis 2025
+//!
+//! https://verifythis.github.io/onsite/archive/2025/
+
 #[cfg(creusot)]
 use creusot_std::logic::such_that;
 use creusot_std::{ghost::perm::Perm, prelude::*};
