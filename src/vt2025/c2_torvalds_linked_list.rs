@@ -76,7 +76,7 @@ pub unsafe fn remove_better_verified(l: &mut List, toremove: *const Node) -> Gho
     let mut mut_perms = ghost! { seq_as_mut(&mut *l.perms) };
     let _mut_perms = snapshot! { mut_perms };
     ghost! {
-        if !(*_x.into_ghost() == 0int) {
+        if *_x.into_ghost() != 0int {
             mut_perms[0int].disjoint_lemma(&x_perm);
         }
     };
