@@ -45,11 +45,6 @@ impl List {
     }
 }
 
-#[logic(open, inline)]
-pub fn remove<T>(s: Seq<T>, x: Int) -> Seq<T> {
-    pearlite! { s[..x].concat(s[x+1..]) }
-}
-
 /// The function we want to verify, for comparison with the verified version...
 #[trusted]
 pub unsafe fn remove_better(l: &mut List, toremove: *const Node) {
@@ -66,14 +61,14 @@ pub unsafe fn remove_better(l: &mut List, toremove: *const Node) {
 #[requires(exists<x: Int> 0 <= x && x < l.len_logic() && toremove == l.elems()[x])]
 #[ensures({
     let x = such_that(|x: Int| 0 <= x && x < l.len_logic() && toremove == l.elems()[x]);
-    (^l).elems() == remove(l.elems(), x)
+    (^l).elems() == l.elems().removed(x)
 })]
 #[ensures(*result.ward() == toremove)]
 pub unsafe fn remove_better_verified(l: &mut List, toremove: *const Node) -> Ghost<Box<Perm<*const Node>>> {
     let _x =
         snapshot! { such_that(|x: Int| 0 <= x && x < l.len_logic() && toremove == l.elems()[x]) };
-    let x_perm = ghost! { remove_ghost(&mut l.perms, *_x.into_ghost()).into_inner() };
-    let mut mut_perms = ghost! { seq_as_mut(&mut *l.perms) };
+    let x_perm = ghost! { l.perms.remove(*_x.into_ghost()) };
+    let mut mut_perms = ghost! { l.perms.as_muts() };
     let _mut_perms = snapshot! { mut_perms };
     ghost! {
         if *_x.into_ghost() != 0int {
@@ -119,45 +114,4 @@ pub unsafe fn remove_better_verified(l: &mut List, toremove: *const Node) -> Gho
     *p = unsafe { Perm::as_ref(toremove, ghost! { &**x_perm }) }.next;
 
     x_perm
-}
-
-#[check(ghost)]
-#[requires(0 <= x && x < s.len())]
-#[ensures(*result == s[x])]
-#[ensures(*^s == remove(**s, x))]
-fn remove_ghost<T>(
-    s: &mut Ghost<Seq<T>>,
-    x: Int,
-) -> Ghost<T> {
-    ghost! {
-        let mut left = std::mem::replace(s, Seq::new()).into_inner();
-        let mut right = left.split_off_ghost(x);
-        let r = right.pop_front_ghost().unwrap();
-        **s = concat(left, right);
-        r
-    }
-}
-
-#[check(ghost)]
-#[ensures(result == l.concat(r))]
-fn concat<T>(mut l: Seq<T>, r: Seq<T>) -> Seq<T> {
-    let _l = snapshot! { l };
-    let _final_len = snapshot! { l.len() + r.len() };
-    #[variant(*_final_len - l.len())]
-    #[invariant(l == _l.concat(*produced))]
-    for x in r {
-        l.push_back_ghost(x);
-    }
-    l
-}
-
-#[trusted]
-#[check(ghost)]
-#[ensures(result.len() == seq.len())]
-#[ensures((^seq).len() == seq.len())]
-#[ensures(forall<i> 0 <= i && i < seq.len() ==> *result[i] == (*seq)[i])]
-#[ensures(forall<i> 0 <= i && i < seq.len() ==> ^result[i] == (^seq)[i])]
-fn seq_as_mut<T>(seq: &mut Seq<T>) -> Seq<&mut T> {
-    let _ = seq;
-    todo!()
 }
