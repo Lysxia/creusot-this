@@ -56,7 +56,7 @@ pub unsafe fn remove_better(l: &mut List, toremove: *const Node) {
 }
 
 #[check(terminates)]
-// #[erasure(remove_better)] // TODO: Unsupported syntax
+#[erasure(remove_better)]
 #[requires(l.len_logic() > 0)]
 #[requires(exists<x: Int> 0 <= x && x < l.len_logic() && toremove == l.elems()[x])]
 #[ensures({
