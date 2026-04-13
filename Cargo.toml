@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
   "vt2025",
+  "vt2026",
 ]
 
 [workspace.dependencies]
